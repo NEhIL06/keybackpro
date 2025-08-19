@@ -47,10 +47,22 @@ mongoose.connect(process.env.MONGODB_URI, {
 .then(() => console.log('Connected to MongoDB'))
 .catch(err => console.error('MongoDB connection error:', err));
 
-app.use('/api/health',(req, res) => {
-  res.status(200).json({ message: 'Server is healthy' });
-}
-)
+app.get('/api/health', async (req, res) => {
+  let dbStatus = 'disconnected';
+
+  try {
+    dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+  } catch (err) {
+    dbStatus = 'error';
+  }
+
+  res.status(200).json({
+    status: 'ok',
+    uptime: process.uptime(), // how long the server has been up
+    timestamp: new Date(),
+    database: dbStatus
+  });
+});
 
 // Routes
 app.use('/api/auth', authRoutes);
