@@ -47,7 +47,7 @@ mongoose.connect(process.env.MONGODB_URI, {
 .then(() => console.log('Connected to MongoDB'))
 .catch(err => console.error('MongoDB connection error:', err));
 
-app.use('/health',(req, res) => {
+app.use('/api/health',(req, res) => {
   res.status(200).json({ message: 'Server is healthy' });
 }
 )
