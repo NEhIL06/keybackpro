@@ -47,7 +47,7 @@ const ApiKeyList: React.FC<ApiKeyListProps> = ({ apiKeys, loading, onApiKeyDelet
     try {
       setLoadingKey(keyId);
       const response = await apiKeysAPI.getById(keyId);
-      setKeyValues({ ...keyValues, [keyId]: response.data.apiKey.decryptedKey });
+      setKeyValues(prev => ({ ...prev, [keyId]: response.data.apiKey.decryptedKey }));
       setShowKey(keyId);
     } catch (error) {
       console.error('Error fetching key:', error);
@@ -58,14 +58,30 @@ const ApiKeyList: React.FC<ApiKeyListProps> = ({ apiKeys, loading, onApiKeyDelet
 
   const handleCopyKey = async (keyId: string) => {
     try {
-      if (!keyValues[keyId]) {
+      let valueToCopy = keyValues[keyId];
+
+      if (!valueToCopy) {
         setLoadingKey(keyId);
         const response = await apiKeysAPI.getById(keyId);
-        setKeyValues({ ...keyValues, [keyId]: response.data.apiKey.decryptedKey });
+        valueToCopy = response.data.apiKey.decryptedKey;
+        setKeyValues({ ...keyValues, [keyId]: valueToCopy });
         setLoadingKey(null);
       }
 
-      await navigator.clipboard.writeText(keyValues[keyId]);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(valueToCopy);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = valueToCopy;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+
       setCopiedKey(keyId);
       setTimeout(() => setCopiedKey(null), 2000);
     } catch (error) {
