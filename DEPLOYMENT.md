@@ -12,8 +12,11 @@ In your Vercel dashboard, go to your project settings and add these environment 
 ```
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database?retryWrites=true&w=majority
 JWT_SECRET=your-super-secret-jwt-key-here
+ENCRYPTION_KEY=your-32-character-encryption-key-here
 NODE_ENV=production
 ```
+
+Note: `ENCRYPTION_KEY` must be exactly the same as the one used when encrypting your existing keys locally. If it differs, decryption will fail and you won't be able to view/copy keys.
 
 ## Step 2: Deploy to Vercel
 

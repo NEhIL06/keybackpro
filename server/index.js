@@ -64,6 +64,16 @@ async function connectToDatabase() {
   }
 }
 
+// Ensure DB connection for every API request (cached across invocations)
+app.use(async (req, res, next) => {
+  try {
+    await connectToDatabase();
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
 app.get('/api/health', async (req, res) => {
   try {
     await connectToDatabase();

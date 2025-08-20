@@ -49,7 +49,16 @@ router.get('/:id', auth, async (req, res) => {
     }
 
     // Decrypt the key
-    const decryptedKey = decrypt(apiKey.encryptedKey, apiKey.iv);
+    let decryptedKey;
+    try {
+      decryptedKey = decrypt(apiKey.encryptedKey, apiKey.iv);
+    } catch (decryptErr) {
+      console.error('Decryption failed:', decryptErr?.message || decryptErr);
+      return res.status(422).json({
+        message: 'Failed to decrypt API key. Check ENCRYPTION_KEY configuration.',
+        code: 'DECRYPTION_FAILED'
+      });
+    }
 
     // Update last used
     apiKey.lastUsed = new Date();
