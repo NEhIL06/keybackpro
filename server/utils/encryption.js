@@ -25,14 +25,21 @@ const encrypt = (text) => {
 
 const decrypt = (encryptedData, ivHex) => {
   try {
+    
+    console.log('key', key);  
+    console.log('Decrypting data:', encryptedData, ivHex);
     const iv = Buffer.from(ivHex, 'hex');
+    console.log('IV:', iv);
     const decipher = createDecipheriv(algorithm, key, iv);
-
+    console.log('Decipher:', decipher);
     let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
+    console.log('Decrypted:', decrypted);
     decrypted += decipher.final('utf8');
+    console.log('Final decrypted:', decrypted);
 
     return decrypted;
   } catch (error) {
+    console.error('Decryption error:', error);
     throw new Error('Decryption failed');
   }
 };
