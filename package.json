@@ -7,7 +7,7 @@
     "dev": "concurrently \"npm run server\" \"vite\"",
     "server": "cd server && node index.js",
     "build": "vite build",
-    "vercel-build": "vite build", 
+    "vercel-build": "vite build && echo 'Build completed'",
     "lint": "eslint .",
     "preview": "vite preview"
   },

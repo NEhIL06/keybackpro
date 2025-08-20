@@ -26,7 +26,7 @@ app.use(cors({
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 30 * 60 * 1000, // 15 minutes
+  windowMs: 30 * 60 * 1000, // 30 minutes
   max: 100, // limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again later.'
 });
@@ -36,32 +36,52 @@ app.use('/api', limiter);
 app.use(json({ limit: '10mb' }));
 app.use(urlencoded({ extended: true }));
 
-// Connect to MongoDB
-const MONGODB_URI = process.env.MONGODB_URI ;
-console.log('Connecting to MongoDB:', MONGODB_URI);
+// MongoDB connection function for serverless
+let cachedDb = null;
 
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('Connected to MongoDB'))
-.catch(err => console.error('MongoDB connection error:', err));
-
-app.get('/api/health', async (req, res) => {
-  let dbStatus = 'disconnected';
-
-  try {
-    dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
-  } catch (err) {
-    dbStatus = 'error';
+async function connectToDatabase() {
+  if (cachedDb) {
+    return cachedDb;
   }
 
-  res.status(200).json({
-    status: 'ok',
-    uptime: process.uptime(), // how long the server has been up
-    timestamp: new Date(),
-    database: dbStatus
-  });
+  try {
+    const MONGODB_URI = process.env.MONGODB_URI;
+    console.log('Connecting to MongoDB:', MONGODB_URI);
+    
+    const connection = await mongoose.connect(MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      bufferCommands: false,
+      bufferMaxEntries: 0,
+    });
+    
+    cachedDb = connection;
+    console.log('Connected to MongoDB');
+    return connection;
+  } catch (err) {
+    console.error('MongoDB connection error:', err);
+    throw err;
+  }
+}
+
+app.get('/api/health', async (req, res) => {
+  try {
+    await connectToDatabase();
+    const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+    
+    res.status(200).json({
+      status: 'ok',
+      uptime: process.uptime(),
+      timestamp: new Date(),
+      database: dbStatus
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Database connection failed',
+      error: process.env.NODE_ENV === 'production' ? {} : error.message
+    });
+  }
 });
 
 // Routes
@@ -77,9 +97,12 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
 
 export default app;
